@@ -1,0 +1,2 @@
+# spc
+A compression algorithm
