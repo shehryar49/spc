@@ -15,6 +15,7 @@
 
 char arr[5] = {0,0,0,0,0};
 int count = 1;
+//for testing, it takes a string as input and prints n! permutes
 void permute(char* str,int i,int len)
 {
     if(i == len)
@@ -30,6 +31,8 @@ void permute(char* str,int i,int len)
         }
     }
 }
+
+//calculates factorial for an integer
 size_t fact(size_t x)
 {
     size_t result = 1;
@@ -41,6 +44,8 @@ size_t fact(size_t x)
     return result;
 }
 char tmp[] = "abcdefghi";
+
+//while traversing down the tree to find the magic number, this removes chraracters from the domain of characted to be considered
 void remove_char(int idx,int len)
 {
     for(int i=idx;i < len-1 ;i++)
@@ -50,6 +55,7 @@ void remove_char(int idx,int len)
     tmp[len-1] = 0;
 }
 
+//converts the compressed text by using magic number and character count
 void decompress(int x,int len)
 {
     if(len == 0)
@@ -89,6 +95,8 @@ void decompress(int x,int len)
         }
     }
 }
+
+//data type to store characters and thier counts
 struct spc_pair
 {
     char ch;
@@ -100,6 +108,8 @@ struct spc_pair
         return ch == b.ch;
     }
 };
+
+//for after the file has been reduced to a binary file, then we have this data type to store the characters and their ocunts
 struct spc_binary_pair
 {
     unsigned char byte;
@@ -116,6 +126,8 @@ struct spc_binary_pair
 };
 
 size_t counts[26];
+
+//converts the string into compressed data using magic number and count table
 size_t compress(const char* str)
 {
   size_t len = strlen(str);
@@ -161,6 +173,8 @@ size_t compress(const char* str)
   }
   return count + 1;
 }
+
+//dont know yet
 void decompress1(size_t magic_num)
 {
     size_t len = 0;
@@ -202,118 +216,12 @@ void decompress1(size_t magic_num)
     puts("");
 }
 ///////////////
-void generate_seq_bignum(mpz_t x,mpz_t factorial)
-{
-    std::string seq;
-    mpz_t high;
-    mpz_init(high);
-    mpz_set(high,factorial);
-
-    mpz_t low;
-    mpz_init(low);
-    mpz_set_ui(low,1);
-
-    mpz_t mid;
-    mpz_init(mid);
-    mpz_set_ui(mid,0);
-
-    int i = 0;
-    uint8_t byte = 0;
-    uint8_t mask = 0x80;
-    FILE* fp = fopen("compressed.bin","wb");
-    while(mpz_cmp(mid,x)!=0)
-    {
-        mpz_sub(mid,high,low);
-        mpz_div_ui(mid,mid,2);
-        mpz_add(mid,mid,low);
-        if(mpz_cmp(x,mid) <= 0)
-        {
-            mpz_set(high,mid);
-            fputc('0',stdout);
-            //seq += '0';
-            //byte has all bits zero alread
-        }
-        else 
-        {
-            mpz_add_ui(mid,mid,1);
-            mpz_set(low,mid);
-            //seq +='1';
-            fputc('1',stdout);
-            byte |= mask;
-        }    
-        i++;
-        if(i == 8)
-        {
-            fputc(byte,fp);
-            byte = 0;
-            mask = 0x80;
-            i = 0;
-        }
-        else
-            mask >>= 1;
-    }
-   // printf("\ni = %d\n",i);
-    fputc(byte,fp);
-    fputc((char)i,fp);
-    fclose(fp);
-    puts("");
-}
 mpz_t magic_num;
-void get_bignum_from_seq(const char* filename,mpz_t n)
-{
-    FILE* fp = fopen(filename,"rb");
-    fseek(fp,0,SEEK_END);
-    size_t total = ftell(fp);
-    rewind(fp);
-    fseek(fp,total-1,SEEK_SET);
-    uint8_t last_byte = fgetc(fp);
-    rewind(fp);
-    mpz_t low;
-    mpz_init(low);
-    mpz_set_ui(low,1);
 
-    mpz_t high;
-    mpz_init(high);
-    mpz_set(high,n);
-
-    mpz_t mid;
-    mpz_init(mid);
-    mpz_set_ui(mid,0);
-    
-    int i = 0;
-    uint8_t byte;
-    uint8_t mask = 0x80;
-    char ch;
-    for(size_t k=1;k<=total-1;k++)
-    {
-        byte = fgetc(fp);
-        mask = 0x80;
-        size_t bits_to_use = (k == total-1) ? last_byte : 8;
-        for(size_t i = 0;i<bits_to_use;i++)
-        {
-            int a = (byte & mask) != 0;
-            printf("%d",a);
-            mpz_sub(mid,high,low);
-            mpz_div_ui(mid,mid,2);
-            mpz_add(mid,mid,low);
-            if((byte & mask) == 0)
-                mpz_set(high,mid);
-            else
-            {
-                mpz_add_ui(mid,mid,1);
-                mpz_set(low,mid);
-            }
-            mask >>= 1;
-        }
-    }
-    printf("\nnum = ");
-    mpz_out_str(stdout,10,mid);
-    puts("");
-    fclose(fp);
-    mpz_set(magic_num,mid);
-}
 ////////////
 mpz_t factorial_result;
+
+//calculate the factorial of hte big number
 void bignum_factorial(mpz_t x)
 {
     mpz_set_ui(factorial_result,1);
@@ -323,100 +231,11 @@ void bignum_factorial(mpz_t x)
         mpz_sub_ui(x,x,1);
     }
 }
-void write_magicnum(const char* filename)
-{
-    FILE* fp = fopen(filename,"wb");
-    
-    //Convert magic number to base256
-    mpz_t r;
-    mpz_init(r);
-    const int chosen_base = 256; // 2^9 * 2^11 * 2^10 = 2^30
-    mpz_t base;
-    mpz_init(base);
-    mpz_set_ui(base,chosen_base);
 
-    size_t bytes = 0;
-    while(mpz_cmp_ui(magic_num,0) != 0)
-    {
-        mpz_tdiv_r(r,magic_num,base);
-        uint8_t m = mpz_get_ui(r);
-        //printf("%d\n",m);
-        
-        fputc(m,fp);
-        bytes++;
-        mpz_div_ui(magic_num,magic_num,chosen_base);
-    }
-    fclose(fp);
-    //printf("bytes taken = %zu\n",bytes);
-}
-void minify(mpz_t a,mpz_t b)    //tries to minify the magic number
-{
-    mpz_t x;
-    mpz_init(x);
-    mpz_set(x,a);
-    size_t twos;
-    size_t threes;
-    size_t fives;
-    
-    mpz_t r;
-    mpz_init(r);
-
-    mpz_t d;
-    mpz_init(d);
-    mpz_set_ui(d,2);
-
-    while(mpz_cmp_ui(d,1000000)!=0)
-    {
-        /*printf("new  = ");
-        mpz_out_str(stdout,10,x);
-        puts("");*/
-        mpz_mod(r,x,d);
-        if(mpz_cmp_ui(r,0) == 0)
-        {
-            mpz_div(x,x,d);
-        }
-        mpz_add_ui(d,d,1);
-    }
-//    printf("2s = %zu, 3s = %zu, 5s = %zu\n",twos,threes,fives);
-    printf("new  = ");
-    mpz_out_str(stdout,10,x);
-    puts("");
-    return;
-  //  mpz_t d;
-   // mpz_init(d);
-   // mpz_set_ui(d,100000);
-
-    mpz_mul_ui(d,d,100000);
-    mpz_mul_ui(d,d,100000);
-    mpz_mul_ui(d,d,100000);
-    mpz_mul_ui(d,d,100000);
-    
-    mpz_t fact;
-    mpz_init(fact);
-    mpz_set(fact,b);
-    mpz_div(fact,fact,d);
-
-
-    mpz_t tmp;
-    mpz_init(tmp);
-    mpz_div(tmp,x,fact); // x/(n!/2)
-
-    mpz_t remainder;
-    mpz_init(remainder);
-
-    mpz_tdiv_r(remainder,x,fact);
-
-    printf("new  = ");
-    mpz_out_str(stdout,10,tmp);
-    puts("");
-
-    printf("remainder  = ");
-    mpz_out_str(stdout,10,remainder);
-    puts("");
-}
 
 size_t binary_counts[256];
 
+//self explanatory
 void binary_compress(const char* filename)
 {
     FILE* fp = fopen(filename,"rb");
@@ -575,61 +394,14 @@ void binary_decompress(const char* filename,const char* outfile)
     }
     fclose(fp);
 }
+
+//initialisation
 void init_spc()
 {
     mpz_init(factorial_result);
     mpz_init(magic_num);
     memset(binary_counts,0,sizeof(size_t)*256);
 }
-
-std::string generate_seq(size_t x,size_t n)
-{
-    if(x == 0)
-        exit(1);
-    //x is in range [1,n]
-    size_t mid = 0;
-    size_t low = 1;
-    size_t high = n;
-    std::string seq;
-    //000010110
-    while(mid != x)
-    {
-        //printf("[%zu , %zu]\n",low,high);
-        mid = (high - low)/2 + low;
-        if(x <= mid)
-        {
-            high = mid;
-            seq+='0';
-        }
-        else 
-        {
-            low = mid+1;
-            seq += '1';
-        }  
-    }
-    return seq;
-}
-size_t get_num_from_seq(std::string seq)
-{
-    size_t low = 1;
-    size_t high = 1000;
-    size_t mid;
-    for(auto ch: seq)
-    {
-        mid = (high - low)/2 + low;
-        if(ch == '0')
-            high = mid;
-        else
-            low = mid+1;
-    }
-    return mid;
-}
-void save_magic_num()
-{
-    mpz_t a;
-    mpz_t b;
-    mpz_t c;
-    mpz_t d;
 
 }
 int main(int argc,const char* argv[])
