@@ -98,89 +98,143 @@ int binary_search(const std::string& word, const std::vector<string>& words)
     return -1;
 }
 
-//checks if character is dilimiter
+//checks if character is delimiter
 bool is_word_delimiter(char ch)
 {
     return (ch == ' ' || ch == ',' || ch == '.' || ch == '!' || ch == ';' || ch == ':');
 }
-
-void compress_file(const char* filename)
+void write_word(const string& str,const vector<string>& dict,FILE* fp)
 {
-    vector<string> dict;
-    read_dict(dict,"sorted-dict.txt");
-    std::string data = "   American      anniversary celebrated yesterday           ";
-    std::stringstream s(data);
-    std::string word;
-    FILE* fp = fopen("compressed.bin","wb");
-    size_t i = 0;
-    size_t len = data.length();
-    int start = 0;
-    
-    while(start < len && is_word_delimiter(data[start]))
-        start++;
-
-    for(i = start; i< len; i++)
-    {
-        char ch = data[i];
-        if(is_word_delimiter(ch))
-        {
-            int end = i;
-            // start to end-1
-            // end-1-start+1
-            //cout << "start = "<<start<<endl;
-            //cout << "end = " << end << endl;
-            int word_len = (end - start);
-            if(word_len < 0);
-            else
-            {
-                word = data.substr(start,word_len);
-                cout <<"|"<< word << "|" <<endl;
-            }
-            
-            while(i < len && is_word_delimiter(data[i]))
-                i++;
-            start = i;
-            //cout << "next start = "<<start << endl;
-            //exit(0);
-        }
-    }
-    i--; //since on the last iteration, while exiting the for loop, i was incremented
-    cout << "Assumption 1: "<< ( i == len) << endl;
-    int word_len = (i - start);
-    cout << word_len << endl;
-    cout << "i = "<< i<<endl;
-    cout << "start = " << start << endl;
-    if(word_len <= 0) //ignore
-    ;
+    short word_num = (str.length() <= 2) ? -1 : binary_search(str,dict);
+    if(word_num)
+        printf("%s %d\n",str.c_str(),word_num);
+    if(word_num == -1) // word not found in dictionary
+        fputs(str.c_str(),fp);
     else
     {
-        word = data.substr(start,word_len);
-        cout <<"|"<< word << "|" <<endl;
+        // assumption:
+        //word_num is always in range 0 - (2^15 - 1)
+        //most significant bit is always set to indicate dictionary native words
+        unsigned char byte2 = word_num & 0x00ff;
+        word_num >>= 8;
+        unsigned char byte1 = (word_num & 0x00ff); 
+        // write as big endian
+        byte1 |= 0x80;
+        fputc(byte1,fp);
+        fputc(byte2,fp);
     }
-    /*while(s >> word)
+}
+
+void compress_file(const char* filename,const vector<string>& dict)
+{
+    std::string word;
+    FILE* fin = fopen(filename,"rb");
+    std::string buffer;
+    buffer.resize(256);
+    FILE* fp = fopen("compressed.bin","wb");
+    int len;
+    while((len = fread(&buffer[0],sizeof(char),256,fin)))
     {
-        short word_num = binary_search(word,dict);
-        cout << word_num << endl;  
-        if(word_num == -1) // word not found in dictionary
+        //Compress each block
+        size_t i = 0;
+        int start = 0;        
+        while(start < len && is_word_delimiter(buffer[start]))
         {
-            word += " ";
-            fwrite(word.c_str(),sizeof(char),word.length(),fp);
-        }
-        else
-        {
-            // assumption:
-            //word_num is always in range 0 - (2^15 - 1)
-            //most significant bit is always set to indicate dictionary native words
-            short mask = 0x8000;
-            word_num |= mask; //set msb to 1
-            fwrite(&word_num,sizeof(short),1,fp);
+            fputc(buffer[start],fp);
+            start++;
         }
 
-    }*/
+        for(i = start; i< len; i++)
+        {
+            char ch = buffer[i];
+            if(is_word_delimiter(ch))
+            {
+                int end = i;
+                int word_len = (end - start);
+                if(word_len < 0);
+                else
+                {
+                    word = buffer.substr(start,word_len);
+                    write_word(word,dict,fp);
+                }
+                
+                while(i < len && is_word_delimiter(buffer[i]))
+                {
+                    fputc(buffer[i],fp);
+                    i++;
+                }
+                start = i;
+            }
+        }
+        i--; //since on the last iteration, while exiting the for loop, i was incremented
+        int word_len = (i - start);
+        if(word_len <= 0) //ignore
+        ;
+        else
+        {
+            word = buffer.substr(start,word_len);
+            write_word(word,dict,fp);
+        }
+    }
     fclose(fp);
+    fclose(fin);
+}
+void decompress_file(const char* filename,const vector<string>& dict)
+{
+    FILE* fp = fopen(filename,"rb");
+    if(!fp)
+    {
+        printf("error opening file!\n");
+        return;
+    }
+    char buffer[256];
+    size_t read;
+    FILE* fout = fopen("decompressed.txt","wb");
+    while((read = fread(buffer,sizeof(char),256,fp)))
+    {
+        for(size_t i = 0; i < read; i++)
+        {
+            char ch = buffer[i];
+            if(ch & 0x80)
+            {
+                ch &= 0x7f;
+                // 0000 0000 0XXX XXXX
+
+                short word_num = ch;
+                word_num <<= 8;
+                // read next byte, there is always one
+                if(i+1 >= read)
+                {
+                    puts("Invalid file");
+                    exit(1);
+                }
+                unsigned char continuation = buffer[i+1];
+                word_num |= continuation;
+                const char* word = dict[word_num].c_str();
+                fputs(word,fout);
+                i+=1;
+            }
+            else
+                fputc(ch,fout);
+        }
+    }
+    fclose(fp);
+    fclose(fout);
+}
+void print_endian()
+{
+    int x = 1;
+    if(((char*)(&x))[0] == 1)
+        puts("Little Endian");
+    else
+        puts("Big Endian");
 }
 int main()
 {
-    compress_file("nofile");
-    //read_and_sort_dict("dict.txt");
+    vector<string> dict;
+    read_dict(dict,"sorted-dict.txt");
+
+    compress_file("input.txt",dict);
+    puts("-------------------------------");
+    decompress_file("compressed.bin",dict);
 }
