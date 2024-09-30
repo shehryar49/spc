@@ -58,7 +58,7 @@ void read_and_sort_dict(const char* filename)
     vector<string> words;
     while(fin >> word)
     {
-        if(word.length() >= 4)
+        if(word.length() >= 3)
             words.push_back(word);
     }
     fin.close();
@@ -106,8 +106,8 @@ bool is_word_delimiter(char ch)
 void write_word(const string& str,const vector<string>& dict,FILE* fp)
 {
     short word_num = (str.length() <= 2) ? -1 : binary_search(str,dict);
-    if(word_num)
-        printf("%s %d\n",str.c_str(),word_num);
+    //if(word_num)
+    //    printf("%s %d\n",str.c_str(),word_num);
     if(word_num == -1) // word not found in dictionary
         fputs(str.c_str(),fp);
     else
@@ -136,7 +136,7 @@ void compress_file(const char* filename,const vector<string>& dict)
     while((len = fread(&buffer[0],sizeof(char),256,fin)))
     {
         //Compress each block
-        size_t i = 0;
+        int i = 0;
         int start = 0;        
         while(start < len && is_word_delimiter(buffer[start]))
         {
@@ -166,7 +166,7 @@ void compress_file(const char* filename,const vector<string>& dict)
                 start = i;
             }
         }
-        i--; //since on the last iteration, while exiting the for loop, i was incremented
+        
         int word_len = (i - start);
         if(word_len <= 0) //ignore
         ;
@@ -199,16 +199,18 @@ void decompress_file(const char* filename,const vector<string>& dict)
             {
                 ch &= 0x7f;
                 // 0000 0000 0XXX XXXX
-
                 short word_num = ch;
                 word_num <<= 8;
                 // read next byte, there is always one
+                unsigned char continuation; 
                 if(i+1 >= read)
                 {
-                    puts("Invalid file");
-                    exit(1);
+                    continuation = fgetc(fp);
+                    //puts("Invalid file");
+                    //exit(1);
                 }
-                unsigned char continuation = buffer[i+1];
+                else
+                    continuation = buffer[i+1];
                 word_num |= continuation;
                 const char* word = dict[word_num].c_str();
                 fputs(word,fout);
@@ -221,20 +223,19 @@ void decompress_file(const char* filename,const vector<string>& dict)
     fclose(fp);
     fclose(fout);
 }
-void print_endian()
-{
-    int x = 1;
-    if(((char*)(&x))[0] == 1)
-        puts("Little Endian");
-    else
-        puts("Big Endian");
-}
-int main()
-{
-    vector<string> dict;
-    read_dict(dict,"sorted-dict.txt");
 
-    compress_file("input.txt",dict);
+int main(int argc,const char* argv[])
+{
+    //IMPORTANT: Limit the size of dictionaries to 32768 words for now i.e 2^15
+    //read_and_sort_dict("google-10k-usa.txt");
+    if(argc!=3)
+    {
+        puts("usage: ./sdc sorted-dict textfile");
+        return 1;
+    }
+    vector<string> dict;
+    read_dict(dict,argv[1]);
+    compress_file(argv[2],dict);
     puts("-------------------------------");
     decompress_file("compressed.bin",dict);
 }
