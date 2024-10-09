@@ -8,9 +8,6 @@
 
 using namespace std;
 
-
-//GPT can't write this
-// Humans are better
 bool islessthan(const std::string& s1,const std::string& s2)
 {
     size_t i = 0;
