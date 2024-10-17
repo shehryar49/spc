@@ -98,16 +98,12 @@ int binary_search(const std::string& word, const std::vector<string>& words)
 //checks if character is delimiter
 bool is_word_delimiter(char ch)
 {
-    return (ch == ' ' || ch == ',' || ch == '.' || ch == '!' || ch == ';' || ch == ':' || ch == '-' || ch == '/');
+    return (ch == ' ' || ch == ',' || ch == '.' || ch == '!' || ch == ';' || ch == ':' || ch == '-' || ch == '/' || ch == '\n' || ch =='\r' || ch=='\t' || ch == '#' || ch == '*' || ch == '(');
 }
 void write_word(const string& str,const vector<string>& dict,FILE* fp)
 {
     short word_num = (str.length() <= 2) ? -1 : binary_search(str,dict);
-    if(word_num == 25216)
-    {
-	    puts("found the culprit before murder");
-	    
-    }
+    
     //if(word_num)
     //    printf("%s %d\n",str.c_str(),word_num);
     if(word_num == -1) // word not found in dictionary
@@ -221,8 +217,7 @@ void decompress_file(const char* filename,const vector<string>& dict)
                 word_num |= continuation;
 		if(word_num < 0 || (int)word_num >= (int)dict.size())
 		{
-			puts("found the culprit");
-                	printf("word_num = %d\n",word_num);
+			puts("decompressing invalid file!");
 			exit(1);
 		}
 		const char* word = dict[word_num].c_str();
@@ -248,7 +243,8 @@ int main(int argc,const char* argv[])
     }
     vector<string> dict;
     read_dict(dict,argv[1]);
+   // puts("--------------COMPRESSING-------------------");
     compress_file(argv[2],dict);
-    puts("-------------------------------");
+    //puts("--------------DECOMPRESSING-----------------");
     decompress_file("compressed.bin",dict);
 }

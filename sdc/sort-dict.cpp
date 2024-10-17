@@ -51,6 +51,11 @@ void bubblesort(vector<string>& words)
 void read_and_sort_dict(const char* filename)
 {
     ifstream fin(filename,ios::in);
+    if(!fin)
+    {
+        puts("error opening file");
+        return;
+    }
     std::string word;
     vector<string> words;
     while(fin >> word)
@@ -69,7 +74,7 @@ void read_and_sort_dict(const char* filename)
 
 int main(int argc,const char* argv[])
 {
-    if(argc!=3)
+    if(argc!=2)
     {
         puts("usage: ./sort-dict file");
         return 1;
