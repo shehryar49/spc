@@ -5,13 +5,13 @@
 
 using namespace std;
 const char* corpora[] = {
-    /*"big.txt", //from internet
+    "big.txt", //from internet
     "bible.txt", // from canterbury git repo
     "DATASET.csv", // from Kaggle(spotify reviews)
     "suhaib.txt",  // from Kaggle
     "world192.txt", // from canterbury corpus
     "fields.c", // from canterbury corpus
-    */"sqlite3.c", //sqlite3 source code
+    "sqlite3.c", //sqlite3 source code
 };
 const char* dicts[] = {
     "20k-google.txt",
