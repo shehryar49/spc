@@ -5,7 +5,7 @@ int main(int argc,const char* argv[])
 {
     if(argc != 2)
     {
-        puts("usage: ./test filename");
+        puts("usage: ./make_ascii filename");
         return 1;
     }
     unsigned char mask = 0x80;
@@ -18,13 +18,8 @@ int main(int argc,const char* argv[])
     char ch = 0;
     while((ch = fgetc(fp)) != EOF)
     {
-        if((ch & mask))
-        {
-            puts("not valid ascii only file!");
-            break;
-        }
-        else
-            ;//fputc(ch,stdout);
+        if(!(ch & mask))
+            fputc(ch,stdout);
     }
     fclose(fp);
 }
