@@ -7,7 +7,6 @@
 #include <vector>
 
 using namespace std;
-//testing
 bool islessthan(const std::string& s1,const std::string& s2)
 {
     size_t i = 0;
